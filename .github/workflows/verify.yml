@@ -1,0 +1,148 @@
+name: Verify and reproduce
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    env:
+      GOTOOLCHAIN: local
+      GOPROXY: off
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.1'
+          cache: false
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test with race detector
+        run: go test -race ./...
+
+      - name: Check forbidden imports and module directives
+        shell: bash
+        run: |
+          imports="$(go list -f '{{join .Imports "\n"}}{{"\n"}}{{join .TestImports "\n"}}{{"\n"}}{{join .XTestImports "\n"}}' ./...)"
+          if printf '%s\n' "$imports" | grep -Eq '^(C|log|net|net/.*|os/exec|plugin|expvar|runtime/pprof|runtime/trace|log/syslog|log/slog|math/rand|math/rand/v2|unsafe)$'; then
+            echo 'Forbidden Go import found.' >&2
+            exit 1
+          fi
+          if grep -Eq '^[[:space:]]*(require|replace)([[:space:]]|$)' go.mod; then
+            echo 'go.mod must not contain require or replace directives.' >&2
+            exit 1
+          fi
+
+  build-a:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: checks
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      sha256: ${{ steps.build.outputs.sha256 }}
+    env:
+      CGO_ENABLED: '0'
+      GOAMD64: v1
+      GOARCH: amd64
+      GOFLAGS: -mod=readonly
+      GOOS: linux
+      GOTOOLCHAIN: local
+      GOPROXY: off
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.1'
+          cache: false
+
+      - name: Build release candidate
+        id: build
+        run: |
+          go build -trimpath -buildvcs=false -ldflags='-s -w' \
+            -o xorbit-linux-amd64 ./cmd/xorbit
+          sha256sum xorbit-linux-amd64 > SHA256SUMS
+          echo "sha256=$(sha256sum xorbit-linux-amd64 | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload unsigned candidate
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: xorbit-linux-amd64-unsigned
+          path: |
+            xorbit-linux-amd64
+            SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+
+  build-b:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: checks
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      sha256: ${{ steps.build.outputs.sha256 }}
+    env:
+      CGO_ENABLED: '0'
+      GOAMD64: v1
+      GOARCH: amd64
+      GOFLAGS: -mod=readonly
+      GOOS: linux
+      GOTOOLCHAIN: local
+      GOPROXY: off
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.1'
+          cache: false
+
+      - name: Build independent release candidate
+        id: build
+        run: |
+          go build -trimpath -buildvcs=false -ldflags='-s -w' \
+            -o xorbit-linux-amd64 ./cmd/xorbit
+          echo "sha256=$(sha256sum xorbit-linux-amd64 | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
+  compare-builds:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - build-a
+      - build-b
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require identical binaries
+        env:
+          BUILD_A_SHA256: ${{ needs.build-a.outputs.sha256 }}
+          BUILD_B_SHA256: ${{ needs.build-b.outputs.sha256 }}
+        run: |
+          if [ "$BUILD_A_SHA256" != "$BUILD_B_SHA256" ]; then
+            echo 'Independent Linux/amd64 builds differ.' >&2
+            exit 1
+          fi
+          echo 'Independent Linux/amd64 builds are byte-for-byte identical.'
