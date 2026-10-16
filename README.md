@@ -12,24 +12,34 @@ combining independent entropy sources to strengthen security.
 
 ## Installation
 
-The recommended way to build `xorbit` is with the security-hardening settings below. From the repository root, run:
+### Download a release
+
+Prebuilt releases target Linux/amd64 (`GOAMD64=v1`) and are published on the
+[GitHub Releases page](https://github.com/jpcummins/xorbit/releases). Verify
+the GPG signature and checksum before running a downloaded executable. See
+[RELEASES.md](RELEASES.md) for verification and reproduction instructions.
+
+The expected primary GPG fingerprint is
+`01AC C456 133B A0C5 75CA F3EA AECE 715F 746C F11A`. Confirm it through a
+trusted source independent of the release download before trusting the key.
+
+### Build from source
+
+Use Go 1.27.1 and build the release target from the repository root:
 
 ```sh
 CGO_ENABLED=0 GOTOOLCHAIN=local GOPROXY=off GOFLAGS=-mod=readonly \
+  GOOS=linux GOARCH=amd64 GOAMD64=v1 \
   go build -trimpath -buildvcs=false -ldflags='-s -w' \
   -o xorbit ./cmd/xorbit
 ```
 
-These settings make the release build self-contained and reproducible:
-
-- `CGO_ENABLED=0` builds without C dependencies.
-- `GOTOOLCHAIN=local` uses the installed, pinned Go toolchain; `GOPROXY=off`
-  disables network access, and `GOFLAGS=-mod=readonly` prevents module-file
-  changes.
-- `-trimpath` removes local build paths, and `-buildvcs=false` omits version
-  control metadata.
-- `-ldflags='-s -w'` removes symbol and debug tables to reduce binary size.
-- `-o xorbit` names the output executable.
+The explicit Go version and target, `CGO_ENABLED=0`, and offline module
+settings make the build inputs repeatable. `-trimpath` removes local build
+paths, `-buildvcs=false` omits repository metadata, and `-ldflags='-s -w'`
+removes symbol and debug tables. The release workflow builds the tagged source
+on two independent runners and requires identical binary hashes. See
+[RELEASES.md](RELEASES.md) to compare a local build with the published binary.
 
 ## Usage
 

@@ -91,6 +91,7 @@ jobs:
           path: |
             xorbit-linux-amd64
             SHA256SUMS
+            release-key.asc
           if-no-files-found: error
           retention-days: 14
 

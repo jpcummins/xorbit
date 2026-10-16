@@ -10,6 +10,9 @@ Treat both as secrets.
   recording devices.
 - Review the source and verify the build you run. The program accepts no
   arguments and requires its controlling terminal.
+- Download only from the official [GitHub Releases page](https://github.com/jpcummins/xorbit/releases).
+  Verify the GPG signature, checksum, and signing-key fingerprint, and
+  preferably reproduce the build; see [RELEASES.md](RELEASES.md).
 - Keep the XOR screen private. It displays the dice digest, kernel RNG bytes,
   and final entropy; these values are for verification and need not be saved.
 - Write the mnemonic code on paper when it is revealed. It is shown once.
@@ -41,6 +44,12 @@ The operator must trust the hardware, Linux kernel, source code, and build.
 A compromised kernel or root account can defeat these protections. Physical
 observation, recording devices, and a compromised terminal emulator are also
 outside the program's protection.
+
+Release verification confirms that a binary matches a checksum manifest signed
+by the maintainer. A successful GPG check alone does not establish who owns a
+key: compare its full fingerprint through an independently trusted source
+before first use. Rebuilding from the tagged source and comparing the binary
+provides an additional check.
 
 ## Reporting a vulnerability
 
