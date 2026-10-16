@@ -1,0 +1,33 @@
+# Release binary built from ./cmd/xorbit.
+/xorbit
+
+# Local design notes; not part of the published source.
+/PLAN.md
+
+# Go test, coverage, and profiling outputs.
+*.test
+*.out
+*.coverprofile
+*.prof
+
+# Go workspace files; this repo is a single module.
+go.work
+go.work.sum
+
+# OS and editor artifacts.
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Local OpenCode agent tooling.
+.opencode/
+opencode.jsonc
+
+# Local environment files.
+.env
+.env.local
+.env.*.local

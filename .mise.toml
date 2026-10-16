@@ -1,0 +1,31 @@
+# Pinned to match the `toolchain` directive in go.mod.
+[tools]
+go = "1.27.1"
+
+# The binary's hardening refuses to start when GOROOT is set; Go finds its
+# own root without it.
+[settings]
+go_set_goroot = false
+
+# Source of truth for the commands lives in AGENTS.md. These tasks are
+# typed aliases that run the documented commands with the offline policy
+# captured once, so it can't be forgotten.
+
+[tasks.test]
+description = "Run all tests under the offline toolchain."
+env = { GOTOOLCHAIN = "local", GOPROXY = "off" }
+run = "go test -race -count=1 ./..."
+
+[tasks.vet]
+description = "Run go vet under the offline toolchain."
+env = { GOTOOLCHAIN = "local", GOPROXY = "off" }
+run = "go vet ./..."
+
+[tasks.build]
+description = "AGENTS.md release build (offline, reproducible)."
+env = { CGO_ENABLED = "0", GOTOOLCHAIN = "local", GOPROXY = "off", GOFLAGS = "-mod=readonly" }
+run = "go build -trimpath -buildvcs=false -ldflags='-s -w' ./cmd/..."
+
+[tasks.clean]
+description = "Remove built binaries from the working tree."
+run = "rm -f xorbit"
