@@ -25,7 +25,7 @@ trusted source independent of the release download before trusting the key.
 
 ### Build from source
 
-Use Go 1.27.1 and build the release target from the repository root:
+Use Go 1.27.3 and build the release target from the repository root:
 
 ```sh
 CGO_ENABLED=0 GOTOOLCHAIN=local GOPROXY=off GOFLAGS=-mod=readonly \

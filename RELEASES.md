@@ -39,7 +39,7 @@ fingerprint check establishes that it is the expected key.
 
 ## Rebuild and compare
 
-Use the exact source tag for the release and Go 1.27.1. After checking out the
+Use the exact source tag for the release and Go 1.27.3. After checking out the
 tag, put the downloaded `xorbit-linux-amd64` in the root of the source
 checkout, alongside `go.mod`. Then build a second copy and compare the bytes:
 
@@ -58,7 +58,7 @@ CGO_ENABLED=0 GOTOOLCHAIN=local GOPROXY=off GOFLAGS=-mod=readonly \
 cmp xorbit-linux-amd64 xorbit.rebuilt
 ```
 
-Replace `vX.Y.Z` with the release tag. `go version` should report Go 1.27.1.
+Replace `vX.Y.Z` with the release tag. `go version` should report Go 1.27.3.
 `cmp` produces no output when the two executables are byte-for-byte identical;
 a difference means the builds do not match. Do not run a binary that fails
 verification.

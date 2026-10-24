@@ -1,6 +1,6 @@
 # Pinned to match the `toolchain` directive in go.mod.
 [tools]
-go = "1.27.1"
+go = "1.27.3"
 
 # The binary's hardening refuses to start when GOROOT is set; Go finds its
 # own root without it.
